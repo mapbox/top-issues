@@ -1,0 +1,137 @@
+<!doctype html>
+<html>
+<head>
+    <title></title>
+    <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
+</head>
+<body class="prose" style="margin: 50px;">
+
+<h1 id="title">Top Github Issues</h1>
+
+<table class="small sortable">
+    <thead>
+        <tr>
+            <th>Issue</th>
+            <th class="sorttable_numeric">Comments</th>
+            <th>Reactions</th>
+            <th>Priority Labels</th>
+            <th>Created</th>
+            <th>Updated</th>
+            <th class="sorttable_numeric">Score</th>
+        </tr>
+    </thead>
+    <tbody id="issues">
+    </tbody>
+</table>
+
+<script>
+
+function fetchGithubIssues(repository) {
+    return fetchGithubIssuesPage(repository, 0).then(function(firstPage) {
+        var pageCount = getPageCountFromLink(firstPage.headers.get('Link'));
+        var pagePromises = [firstPage.json()];
+        for (var i = 1; i < pageCount; i++) {
+            pagePromises.push(fetchGithubIssuesPage(repository, i).then((page) => page.json()));
+        }
+        return Promise.all(pagePromises).then(flatten);
+    });
+};
+
+function fetchGithubIssuesPage(repository, index) {
+    const url = `https://api.github.com/repos/${repository}/issues?per_page=${100}&page=${index + 1}`;
+    return fetch(url, {
+        headers: {
+            'Authorization': 'Basic ' + btoa(`${getParam('github_username')}:${getParam('github_access_token')}`),
+            'Accept': 'application/vnd.github.squirrel-girl-preview'
+        }
+    });
+}
+
+function getPageCountFromLink(link) {
+    return parseInt(link.match(/&page=([0-9]+)>; rel="last"/)[1]);
+}
+
+function flatten(input) {
+    return Array.prototype.concat.apply([], input);
+}
+
+function getParam(name) {
+    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
+}
+
+function getHash() {
+    return window.location.hash.match(/#!([^/?&]+\/[^/?&]+)/)[1];
+}
+
+function compareScores(a, b) {
+    return getScore(b) - getScore(a);
+}
+
+function getScore(issue) {
+    return (
+        issue.reactions.total_count +
+        getLabelsScore(issue) +
+        (1 - Date.parse(issue.created_at) / Date.now())
+    );
+}
+
+const labelScores = {
+    'high priority': 5,
+    'medium priority': 2
+};
+
+function getLabelsScore(issue) {
+    return issue.labels.reduce(((score, label) => score + (labelScores[label.name] || 0)), 0);
+}
+
+const repository = getHash();
+
+document.getElementById('title').innerText = `Top Issues for ${repository}`
+
+fetchGithubIssues(repository).then(function(issues) {
+    document.getElementById('issues').innerHTML = issues.sort(compareScores).map((issue, index) => `
+        <tr>
+            <td><a href="${issue.html_url}">${issue.title}</a></td>
+            <td>${issue.comments}</td>
+            <td sorttable_customkey=${issue.reactions.total_count}>${
+                Object.keys(issue.reactions).map((name) => {
+                    const emoji = ({
+                        '+1': "👍",
+                        '-1': "👎",
+                        'laugh': "😆",
+                        'hooray': "🎉",
+                        'confused': "😕",
+                        'heart': "❤️"
+                    })[name];
+                    const count = issue.reactions[name];
+                    if (!count || !emoji) return;
+                    return `<div class="inline" style="color: #555; margin: 0 3px;">
+                        ${count} ${emoji}
+                    </div>`;
+                }).join('\n')
+            }</td>
+            <td sorttable_customkey=${getLabelsScore(issue)}>${
+                issue.labels.map((label) => {
+                    const score = labelScores[label.name];
+                    if (!score) return;
+                    return `<a
+                        href="https://github.com/${repository}/issues?q=is%3Aissue+is%3Aopen+label%3A${label.name.replace(' ', '+')}"
+                        class="button" style="font-size: 10px; padding: 0 5px 0 5px; background-color: #${label.color};"
+                    >${label.name}</a>`
+                }).join('\n')
+            }</td>
+            <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
+            <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
+            <td>${Math.floor(getScore(issue) * 10) / 10}</td>
+        </tr>
+    `).join('\n');
+});
+
+</script>
+
+<script src="http://momentjs.com/downloads/moment.js"></script>
+<script src="http://www.kryogenix.org/code/browser/sorttable/sorttable.js"></script>
+
+</body>
+</html>
