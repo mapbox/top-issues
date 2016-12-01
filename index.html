@@ -26,6 +26,13 @@
 
 <script>
 
+const repository = getHash();
+const githubUsername = getParam('github_username') || localStorage.getItem("githubUsername");
+const githubAccessToken = getParam('github_access_token') || localStorage.getItem("githubAccessToken");
+
+localStorage.setItem("githubUsername", githubUsername);
+localStorage.setItem("githubAccessToken", githubAccessToken);
+
 function fetchGithubIssues(repository) {
     return fetchGithubIssuesPage(repository, 0).then(function(firstPage) {
         var pageCount = getPageCountFromLink(firstPage.headers.get('Link'));
@@ -41,7 +48,7 @@ function fetchGithubIssuesPage(repository, index) {
     const url = `https://api.github.com/repos/${repository}/issues?per_page=${100}&page=${index + 1}`;
     return fetch(url, {
         headers: {
-            'Authorization': 'Basic ' + btoa(`${getParam('github_username')}:${getParam('github_access_token')}`),
+            'Authorization': 'Basic ' + btoa(`${githubUsername}:${githubAccessToken}`),
             'Accept': 'application/vnd.github.squirrel-girl-preview'
         }
     });
@@ -84,8 +91,6 @@ const labelScores = {
 function getLabelsScore(issue) {
     return issue.labels.reduce(((score, label) => score + (labelScores[label.name] || 0)), 0);
 }
-
-const repository = getHash();
 
 document.getElementById('title').innerText = `Top Issues for ${repository}`
 
