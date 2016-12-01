@@ -55,7 +55,7 @@ function fetchGithubIssuesPage(repository, index) {
 }
 
 function getPageCountFromLink(link) {
-    return parseInt(link.match(/&page=([0-9]+)>; rel="last"/)[1]);
+    return link ? parseInt(link.match(/&page=([0-9]+)>; rel="last"/)[1]) : 1;
 }
 
 function flatten(input) {
