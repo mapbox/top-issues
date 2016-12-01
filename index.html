@@ -68,7 +68,7 @@ function getParam(name) {
 }
 
 function getHash() {
-    return window.location.hash.match(/#!([^/?&]+\/[^/?&]+)/)[1];
+    return window.location.hash.match(/#!([a-zA-Z0-9-_]+\/[a-zA-Z0-9-_]+)/)[1];
 }
 
 function compareScores(a, b) {
