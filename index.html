@@ -79,7 +79,7 @@ function getScore(issue) {
     return (
         issue.reactions.total_count +
         getLabelsScore(issue) +
-        (1 - Date.parse(issue.created_at) / Date.now())
+        (Date.parse(issue.created_at) / Date.now())
     );
 }
 
