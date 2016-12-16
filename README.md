@@ -15,7 +15,7 @@ https://mapbox.github.io/top-issues/#!OWNER/REPOSITORY
 
 Github API requests are rate limited by IP address. You can raise the rate limiy by linking a [personal Github access token](https://help.github.com/articles/creating-an-access-token-for-command-line-use/). To link a link an access token, append `github_username` and `github_access_token` parameters to the URL
 ```
-https://mapbox.github.io/top-issues/#!mapbox/mapbox-gl-js?github_username=USERNAME&github_access_token=ACCESS_TOKEN#!mapbox/mapbox-gl-js
+https://mapbox.github.io/top-issues/?github_username=USERNAME&github_access_token=ACCESS_TOKEN#!mapbox/mapbox-gl-js
 ```
 
 ![screenshot](screenshot.png)
