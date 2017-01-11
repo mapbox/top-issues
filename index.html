@@ -123,8 +123,6 @@ fetchGithubIssues(repository).then(function(issues) {
             }</td>
             <td sorttable_customkey=${getLabelsScore(issue)}>${
                 issue.labels.map((label) => {
-                    const score = labelScores[label.name];
-                    if (!score) return;
                     return `<a
                         href="https://github.com/${repository}/issues?q=is%3Aissue+is%3Aopen+label%3A${label.name.replace(' ', '+')}"
                         class="button" style="font-size: 10px; padding: 0 5px 0 5px; background-color: #${label.color};"
