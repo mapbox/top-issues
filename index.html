@@ -75,22 +75,64 @@ function compareScores(a, b) {
     return getScore(b) - getScore(a);
 }
 
+function getCreatedAtScore(issue) {
+    return -10 * Math.log(Date.parse(issue.created_at) / Date.now());
+}
+
 function getScore(issue) {
     return (
-        issue.reactions.total_count +
+        getReactionsScore(issue) +
         getLabelsScore(issue) +
-        (Date.parse(issue.created_at) / Date.now())
+        getCreatedAtScore(issue)
     );
 }
 
 const labelScores = {
     'high priority': 7,
-    'medium priority': 4,
+    'medium priority': 5,
     'bug': 2
 };
 
 function getLabelsScore(issue) {
     return issue.labels.reduce(((score, label) => score + (labelScores[label.name] || 0)), 0);
+}
+
+const reactionScores = {
+    '+1': 1,
+    '-1': -1,
+    'laugh': 1,
+    'hooray': 1,
+    'confused': 1,
+    'heart': 1
+};
+
+function getReactionsScore(issue) {
+    return Object.keys(issue.reactions).reduce((score, name) => {
+        const reactionCount = issue.reactions[name];
+        const reactionScore = reactionScores[name];
+        if (!reactionCount || !reactionScore) return score;
+        return score + reactionScore * reactionCount;
+    }, 0);
+}
+
+const reactionEmojis = {
+    '+1': "👍",
+    '-1': "👎",
+    'laugh': "😆",
+    'hooray': "🎉",
+    'confused': "😕",
+    'heart': "❤️"
+};
+
+function getReactionsHTML(issue) {
+    return Object.keys(issue.reactions).map((name) => {
+        const count = issue.reactions[name];
+        const emoji = reactionEmojis[name];
+        if (!count || !emoji) return;
+        return `<div class="inline" style="color: #555; margin: 0 3px;">
+            ${count} ${emoji}
+        </div>`;
+    }).join('\n');
 }
 
 function denull(value) {
@@ -104,23 +146,7 @@ fetchGithubIssues(repository).then(function(issues) {
         <tr>
             <td><a href="${issue.html_url}">${issue.title}</a></td>
             <td>${issue.comments}</td>
-            <td sorttable_customkey=${issue.reactions.total_count}>${
-                Object.keys(issue.reactions).map((name) => {
-                    const emoji = ({
-                        '+1': "👍",
-                        '-1': "👎",
-                        'laugh': "😆",
-                        'hooray': "🎉",
-                        'confused': "😕",
-                        'heart': "❤️"
-                    })[name];
-                    const count = issue.reactions[name];
-                    if (!count || !emoji) return;
-                    return `<div class="inline" style="color: #555; margin: 0 3px;">
-                        ${count} ${emoji}
-                    </div>`;
-                }).join('\n')
-            }</td>
+            <td sorttable_customkey=${getReactionsScore(issue)}>${getReactionsHTML(issue)}</td>
             <td sorttable_customkey=${getLabelsScore(issue)}>${
                 issue.labels.map((label) => {
                     return `<a
