@@ -15,7 +15,7 @@
             <th class="sorttable_numeric">Comments</th>
             <th class="sorttable_numeric">Reactions</th>
             <th class="sorttable_numeric">Priority Labels</th>
-            <th class="sorttable_numeric">Assignee</th>
+            <th>Assignee</th>
             <th class="sorttable_numeric">Created</th>
             <th class="sorttable_numeric">Updated</th>
             <th class="sorttable_numeric">Score</th>
@@ -50,7 +50,7 @@ function fetchGithubIssuesPage(repository, index) {
     return fetch(url, {
         headers: Object.assign(
             { 'Accept': 'application/vnd.github.squirrel-girl-preview' },
-            githubUsername && { 'Authorization': 'Basic ' + btoa(`${githubUsername}:${githubAccessToken}`) }
+            githubAccessToken && { 'Authorization': 'Basic ' + btoa(`${githubUsername}:${githubAccessToken}`) }
         )
     });
 }
@@ -64,7 +64,7 @@ function flatten(input) {
 }
 
 function getParam(name) {
-    var match = RegExp('[?&]' + name + '=([^&]*)').exec(window.location.search);
+    var match = RegExp('[?&]' + name + '=([^&/]*)').exec(window.location.search);
     return match && decodeURIComponent(match[1].replace(/\+/g, ' '));
 }
 
@@ -136,6 +136,25 @@ function getReactionsHTML(issue) {
     }).join('\n');
 }
 
+function getAssigneesSortKey(issue) {
+    const assignees = issue.assignees.sort().map(assignee => assignee.login.toLowerCase());
+    if (assignees.length === 0) {
+        return '\ue83a'; // force unassigned to the bottom of the sort
+    }
+    if (githubUsername && assignees.indexOf(githubUsername.toLowerCase()) >= 0) {
+        return '!'; // force user's own issues to top of the sort
+    }
+    return assignees.join(',');
+}
+
+function getAssigneesHTML(issue) {
+    return issue.assignees.sort().map(assignee => `
+        <a href="https://github.com/${repository}/issues/assigned/${assignee.login}">
+            <img class="thumbnail round" src="${assignee.avatar_url}" title="${assignee.login}">
+        </a>
+    `);
+}
+
 function denull(value) {
     return value === "null" ? null : value;
 }
@@ -156,7 +175,7 @@ fetchGithubIssues(repository).then(function(issues) {
                     >${label.name}</a>`
                 }).join('\n')
             }</td>
-            <td>${issue.assignee ? `<a href="${issue.assignee.html_url}">${issue.assignee.login}</a>` : ''}</td>
+            <td sorttable_customkey="${getAssigneesSortKey(issue)}">${getAssigneesHTML(issue)}</td>
             <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
             <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
             <td>${Math.floor(getScore(issue) * 10) / 10}</td>
