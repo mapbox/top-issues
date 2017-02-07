@@ -15,8 +15,8 @@
             <th>Issue</th>
             <th class="sorttable_numeric">Comments</th>
             <th class="sorttable_numeric">Reactions</th>
-            <th class="sorttable_numeric">Priority Labels</th>
-            <th class="sorttable_numeric">Assignee</th>
+            <th class="sorttable_numeric" width="200">Labels</th>
+            <th>Assignee</th>
             <th class="sorttable_numeric">Created</th>
             <th class="sorttable_numeric">Updated</th>
             <th class="sorttable_numeric">Score</th>
@@ -164,7 +164,7 @@ fetchGithubIssues(repository).then(function(issues) {
                     >${label.name}</a>`
                 }).join('\n')
             }</td>
-            <td>${issue.assignee ? `<a href="${issue.assignee.html_url}">${issue.assignee.login}</a>` : ''}</td>
+            <td>${issue.assignee ? `<a href="${issue.assignee.html_url}"><img width="20" height="20" style="display:inline-block;" class="round" src="${issue.assignee.avatar_url}"> ${issue.assignee.login}</a>` : ''}</td>
             <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
             <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
             <td>${Math.floor(getScore(issue) * 10) / 10}</td>
