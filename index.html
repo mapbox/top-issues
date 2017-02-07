@@ -143,7 +143,7 @@ function denull(value) {
 document.getElementById('title').innerText = `Top Issues for ${repository}`
 
 fetchGithubIssues(repository).then(function(issues) {
-    document.getElementById('issues').innerHTML = issues.sort(compareScores).map((issue, index) => `
+    document.getElementById('issues').innerHTML = issues.sort(compareScores).filter((issue) => !issue.pull_request).map((issue, index) => `
         <tr>
             <td><a href="${issue.html_url}">${issue.title}</a></td>
             <td>${issue.comments}</td>
