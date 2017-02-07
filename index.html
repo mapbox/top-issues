@@ -11,6 +11,7 @@
 <table class="small sortable">
     <thead>
         <tr>
+            <th class="sorttable_numeric"></th>
             <th>Issue</th>
             <th class="sorttable_numeric">Comments</th>
             <th class="sorttable_numeric">Reactions</th>
@@ -80,15 +81,21 @@ function getCreatedAtScore(issue) {
     return -10 * Math.log(Date.parse(issue.created_at) / Date.now());
 }
 
+function getCommentsScore(issue) {
+    return 3 * issue.comments / (issue.comments + 2);
+}
+
 function getScore(issue) {
     return (
         getReactionsScore(issue) +
         getLabelsScore(issue) +
-        getCreatedAtScore(issue)
+        getCreatedAtScore(issue) +
+        getCommentsScore(issue)
     );
 }
 
 const labelScores = {
+    'release blocker': 25,
     'high priority': 7,
     'medium priority': 5,
     'bug': 2
@@ -145,6 +152,7 @@ document.getElementById('title').innerText = `Top Issues for ${repository}`
 fetchGithubIssues(repository).then(function(issues) {
     document.getElementById('issues').innerHTML = issues.sort(compareScores).filter((issue) => !issue.pull_request).map((issue, index) => `
         <tr>
+            <td>${index + 1}</td>
             <td><a href="${issue.html_url}">${issue.title}</a></td>
             <td>${issue.comments}</td>
             <td sorttable_customkey=${getReactionsScore(issue)}>${getReactionsHTML(issue)}</td>
