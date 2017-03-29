@@ -28,3 +28,28 @@ To use this tool with a private repo, append `github_username` and `github_acces
 ```
 https://mapbox.github.io/top-issues/?github_username=USERNAME&github_access_token=ACCESS_TOKEN#!secret-agent/top-secret-stuff
 ```
+
+## `.topissuesrc`
+
+You can specify custom scoring settings for your repositry by creating a `.topissuesrc` file in the root directory. This file must be formatted as JSON.
+
+```js
+{
+    "labels": {
+        "high priority": 7,
+        "medium priority": 5,
+    },
+    "reactions": {
+        "+1": 1,
+        "-1": -1,
+        "laugh": 1,
+        "hooray": 1,
+        "confused": 1,
+        "heart": 1
+    }
+}
+```
+
+The properties in the `labels` object assign a scores to labels. You may add as many labels as you like. You may use negative scores if you like. You do not need to assign a score to every label in your project. Because only repository collaborators may add labels, these scores represent the will of the collaborators. 
+
+The properties in the `reactions` object assign scores to [Github reactions](https://github.com/blog/2119-add-reactions-to-pull-requests-issues-and-comments). Only reactions on the initial issue comment "count." Because anyone may add reactions, these scores represent the will of the community.
