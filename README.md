@@ -37,7 +37,7 @@ You can specify custom scoring settings for your repositry by creating a `.topis
 {
     "labels": {
         "high priority": 7,
-        "medium priority": 5,
+        "medium priority": 5
     },
     "reactions": {
         "+1": 1,
