@@ -61,6 +61,32 @@ function fetchGithubIssuesPage(repository, index) {
     });
 }
 
+const defaultSettings = {
+    labels: {
+        'release blocker': 25,
+        'beta blocker': 20,
+        'high priority': 7,
+        'medium priority': 5,
+        'crash': 5,
+        'build': 5,
+        'bug': 2
+    },
+    reactions: {
+        '+1': 1,
+        '-1': -1,
+        'laugh': 1,
+        'hooray': 1,
+        'confused': 1,
+        'heart': 1
+    }
+}
+
+function fetchSettings(repository) {
+    return fetch(`https://raw.githubusercontent.com/${repository}/master/.topissuesrc`)
+        .then((response) => response.status === 404 ? {} : response.json())
+        .then((settings) => Object.assign({}, defaultSettings, settings))
+}
+
 function getPageCountFromLink(link) {
     return link ? parseInt(link.match(/&page=([0-9]+)>; rel="last"/)[1]) : 1;
 }
@@ -78,57 +104,39 @@ function getHash() {
     return window.location.hash.match(/#!([a-zA-Z0-9-_]+\/[a-zA-Z0-9-_\.]+)/)[1];
 }
 
-function compareScores(a, b) {
-    return getScore(b) - getScore(a);
+function compareScores(settings, a, b) {
+    return getScore(settings, b) - getScore(settings, a);
 }
 
-function getCreatedAtScore(issue) {
-    return -10 * Math.log(Date.parse(issue.created_at) / Date.now());
-}
-
-function getCommentsScore(issue) {
-    return 3 * issue.comments / (issue.comments + 2);
-}
-
-function getScore(issue) {
+function getScore(settings, issue) {
     return (
-        getReactionsScore(issue) +
-        getLabelsScore(issue) +
-        getCreatedAtScore(issue) +
-        getCommentsScore(issue)
+        getReactionsScore(settings, issue) +
+        getLabelsScore(settings, issue) +
+        getCreatedAtScore(settings, issue) +
+        getCommentsScore(settings, issue)
     );
+
 }
 
-const labelScores = {
-    'release blocker': 25,
-    'beta blocker': 20,
-    'high priority': 7,
-    'medium priority': 5,
-    'crash': 5,
-    'build': 5,
-    'bug': 2
-};
-
-function getLabelsScore(issue) {
-    return issue.labels.reduce(((score, label) => score + (labelScores[label.name] || 0)), 0);
-}
-
-const reactionScores = {
-    '+1': 1,
-    '-1': -1,
-    'laugh': 1,
-    'hooray': 1,
-    'confused': 1,
-    'heart': 1
-};
-
-function getReactionsScore(issue) {
+function getReactionsScore(settings, issue) {
     return Object.keys(issue.reactions).reduce((score, name) => {
         const reactionCount = issue.reactions[name];
-        const reactionScore = reactionScores[name];
+        const reactionScore = settings.reactions[name];
         if (!reactionCount || !reactionScore) return score;
         return score + reactionScore * reactionCount;
     }, 0);
+}
+
+function getCreatedAtScore(settings, issue) {
+    return -10 * Math.log(Date.parse(issue.created_at) / Date.now());
+}
+
+function getCommentsScore(settings, issue) {
+    return 3 * issue.comments / (issue.comments + 2);
+}
+
+function getLabelsScore(settings, issue) {
+    return issue.labels.reduce(((score, label) => score + (settings.labels[label.name] || 0)), 0);
 }
 
 const reactionEmojis = {
@@ -157,27 +165,29 @@ function denull(value) {
 
 document.getElementById('title').innerText = `Top Issues for ${repository}`
 
-fetchGithubIssues(repository).then(function(issues) {
-    document.getElementById('issues').innerHTML = issues.sort(compareScores).filter((issue) => !issue.pull_request).map((issue, index) => `
+fetchSettings(repository).then(function(settings) {
+    fetchGithubIssues(repository).then(function(issues) {
+        document.getElementById('issues').innerHTML = issues.sort(compareScores.bind(this, settings)).filter((issue) => !issue.pull_request).map((issue, index) => `
         <tr>
-            <td>${index + 1}</td>
-            <td><a href="${issue.html_url}">${issue.title}</a></td>
-            <td>${issue.comments}</td>
-            <td sorttable_customkey=${getReactionsScore(issue)}>${getReactionsHTML(issue)}</td>
-            <td sorttable_customkey=${getLabelsScore(issue)}>${
-                issue.labels.map((label) => {
-                    return `<a
-                        href="https://github.com/${repository}/issues?q=is%3Aissue+is%3Aopen+label%3A${label.name.replace(' ', '+')}"
-                        class="button" style="font-size: 10px; padding: 0 5px 0 5px; background-color: #${label.color};"
-                    >${label.name}</a>`
-                }).join('\n')
-            }</td>
-            <td>${issue.assignee ? `<a href="${issue.assignee.html_url}"><img width="20" height="20" style="display:inline-block;" class="round" src="${issue.assignee.avatar_url}"> ${issue.assignee.login}</a>` : ''}</td>
-            <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
-            <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
-            <td>${Math.floor(getScore(issue) * 10) / 10}</td>
+        <td>${index + 1}</td>
+        <td><a href="${issue.html_url}">${issue.title}</a></td>
+        <td>${issue.comments}</td>
+        <td sorttable_customkey=${getReactionsScore(settings, issue)}>${getReactionsHTML(issue)}</td>
+        <td sorttable_customkey=${getLabelsScore(settings, issue)}>${
+            issue.labels.map((label) => {
+                return `<a
+                href="https://github.com/${repository}/issues?q=is%3Aissue+is%3Aopen+label%3A${label.name.replace(' ', '+')}"
+                class="button" style="font-size: 10px; padding: 0 5px 0 5px; background-color: #${label.color};"
+                >${label.name}</a>`
+            }).join('\n')
+        }</td>
+        <td>${issue.assignee ? `<a href="${issue.assignee.html_url}"><img width="20" height="20" style="display:inline-block;" class="round" src="${issue.assignee.avatar_url}"> ${issue.assignee.login}</a>` : ''}</td>
+        <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
+        <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
+        <td>${Math.floor(getScore(settings, issue) * 10) / 10}</td>
         </tr>
-    `).join('\n');
+        `).join('\n');
+    });
 });
 
 </script>
