@@ -3,6 +3,15 @@
 <head>
     <title></title>
     <link href='https://www.mapbox.com/base/latest/base.css' rel='stylesheet' />
+    <style>
+        td[data-score]:after {
+            content: " (score: " attr(data-score) ")";
+            visibility: hidden;
+        }
+        tr:hover td[data-score]:after {
+            visibility: visible;
+        }
+    </style>
 </head>
 <body class="prose" style="margin: 50px;">
 
@@ -168,6 +177,12 @@ function denull(value) {
     return value === "null" ? null : value;
 }
 
+function round(value, places) {
+    const power = Math.floor(Math.log10(Math.abs(value))) + 1;
+    const mag = Math.pow(10, places - power);
+    return Math.round(value * mag) / mag;
+}
+
 document.getElementById('title').innerText = `Top Issues for ${repository}`
 
 fetchSettings(repository).then(function(settings) {
@@ -176,9 +191,9 @@ fetchSettings(repository).then(function(settings) {
         <tr>
         <td>${index + 1}</td>
         <td><a href="${issue.html_url}">${issue.title}</a></td>
-        <td>${issue.comments}</td>
-        <td sorttable_customkey=${getReactionsScore(settings, issue)}>${getReactionsHTML(issue)}</td>
-        <td sorttable_customkey=${getLabelsScore(settings, issue)}>${
+        <td data-score=${round(getCommentsScore(settings, issue), 2)}>${issue.comments}</td>
+        <td sorttable_customkey=${getReactionsScore(settings, issue)} data-score=${getReactionsScore(settings, issue)}>${getReactionsHTML(issue)}</td>
+        <td sorttable_customkey=${getLabelsScore(settings, issue)} data-score=${getLabelsScore(settings, issue)}>${
             issue.labels.map((label) => {
                 return `<a
                 href="https://github.com/${repository}/issues?q=is%3Aissue+is%3Aopen+label%3A${label.name.replace(' ', '+')}"
@@ -187,9 +202,9 @@ fetchSettings(repository).then(function(settings) {
             }).join('\n')
         }</td>
         <td>${issue.assignee ? `<a href="${issue.assignee.html_url}"><img width="20" height="20" style="display:inline-block;" class="round" src="${issue.assignee.avatar_url}"> ${issue.assignee.login}</a>` : ''}</td>
-        <td sorttable_customkey=${moment(issue.created_at).unix()}>${moment(issue.created_at).fromNow()}</td>
+        <td sorttable_customkey=${moment(issue.created_at).unix()} data-score=${round(getCreatedAtScore(settings, issue), 2)} >${moment(issue.created_at).fromNow()}</td>
         <td sorttable_customkey=${moment(issue.updated_at).unix()}>${moment(issue.updated_at).fromNow()}</td>
-        <td>${Math.floor(getScore(settings, issue) * 10) / 10}</td>
+        <td>${round(getScore(settings, issue), 3)}</td>
         </tr>
         `).join('\n');
     });
