@@ -140,7 +140,7 @@ function getLabelsScore(settings, issue) {
     if (issue.labels.length === 0) {
         return settings.unlabeled;
     } else {
-        return issue.labels.reduce((score, label) => score + (settings.labels[label.name] || 0), 0);
+        return issue.labels.reduce((score, label) => Math.max(score, (settings.labels[label.name] || 0)), 0);
     }
 }
 
