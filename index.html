@@ -62,6 +62,7 @@ function fetchGithubIssuesPage(repository, index) {
 }
 
 const defaultSettings = {
+    unlabeled: 30,
     labels: {
         'release blocker': 25,
         'beta blocker': 20,
@@ -136,7 +137,11 @@ function getCommentsScore(settings, issue) {
 }
 
 function getLabelsScore(settings, issue) {
-    return issue.labels.reduce(((score, label) => score + (settings.labels[label.name] || 0)), 0);
+    if (issue.labels.length === 0) {
+        return settings.unlabeled;
+    } else {
+        return issue.labels.reduce((score, label) => score + (settings.labels[label.name] || 0), 0);
+    }
 }
 
 const reactionEmojis = {
