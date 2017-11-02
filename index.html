@@ -145,7 +145,7 @@ function getCommentsScore(settings, issue) {
 }
 
 function getLabelsScore(settings, issue) {
-    return issue.labels.reduce((score, label) => Math.max(score, (settings.labels[label.name] || 0)), 0);
+    return issue.labels.reduce((score, label) => score + (settings.labels[label.name] || 0), 0);
 }
 
 const reactionEmojis = {
