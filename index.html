@@ -15,6 +15,8 @@
 </head>
 <body class="prose" style="margin: 50px;">
 
+<div id="loading" class="loading"></div>
+
 <h1 id="title">Top Github Issues</h1>
 
 <table class="small sortable">
@@ -34,7 +36,6 @@
     <tbody id="issues">
     </tbody>
 </table>
-
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/fetch/2.0.3/fetch.js"></script>
 <script src="https://momentjs.com/downloads/moment.js"></script>
@@ -182,6 +183,7 @@ document.getElementById('title').innerText = `Top Issues for ${repository}`
 
 fetchSettings(repository).then(function(settings) {
     fetchGithubIssues(repository).then(function(issues) {
+        document.getElementById('loading').style.visibility = 'hidden';
         document.getElementById('issues').innerHTML = issues.sort(compareScores.bind(this, settings)).filter((issue) => !issue.pull_request).map((issue, index) => `
         <tr>
         <td>${index + 1}</td>
