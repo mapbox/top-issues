@@ -15,9 +15,10 @@
 </head>
 <body class="prose" style="margin: 50px;">
 
-<div id="loading" class="loading"></div>
-
 <h1 id="title">Top Github Issues</h1>
+
+<div id="error" class="note error" style="display: none;"></div>
+<div id="loading" class="loading"></div>
 
 <table class="small sortable">
     <thead>
@@ -43,6 +44,13 @@
 
 <script>
 
+function showError(message) {
+    document.getElementById('loading').style.display = 'none';
+    const errorElement = document.getElementById('error');
+    errorElement.style.display = '';
+    errorElement.innerHTML = message;
+}
+
 const repository = getHash();
 const githubUsername = getParam('github_username') || denull(localStorage.getItem("githubUsername"));
 const githubAccessToken = getParam('github_access_token') || denull(localStorage.getItem("githubAccessToken"));
@@ -52,6 +60,9 @@ localStorage.setItem("githubAccessToken", githubAccessToken);
 
 function fetchGithubIssues(repository) {
     return fetchGithubIssuesPage(repository, 0).then(function(firstPage) {
+        if (firstPage.status !== 200) {
+            showError(`<strong>Could not access repository.</strong> You may have misspelled the repository name, it may be private, or you mave have exceeded your rate limit. The HTTP status text is "${firstPage.statusText}."`);
+        }
         var pageCount = getPageCountFromLink(firstPage.headers.get('Link'));
         var pagePromises = [firstPage.json()];
         for (var i = 1; i < pageCount; i++) {
@@ -111,7 +122,11 @@ function getParam(name) {
 }
 
 function getHash() {
-    return window.location.hash.match(/#!([a-zA-Z0-9-_]+\/[a-zA-Z0-9-_\.]+)/)[1];
+    const match = window.location.hash.match(/#!([a-zA-Z0-9-_]+\/[a-zA-Z0-9-_\.]+)/);
+    if (!match) {
+        showError('<strong>No repository specified.</strong> Please append a repository name as a URL fragment like <a href="https://mapbox.github.io/top-issues/#!mapbox/mapbox-gl-js">https://mapbox.github.io/top-issues/#!mapbox/mapbox-gl-js</a>')
+    }
+    return match[1];
 }
 
 function compareScores(settings, a, b) {
@@ -183,7 +198,7 @@ document.getElementById('title').innerText = `Top Issues for ${repository}`
 
 fetchSettings(repository).then(function(settings) {
     fetchGithubIssues(repository).then(function(issues) {
-        document.getElementById('loading').style.visibility = 'hidden';
+        document.getElementById('loading').style.display = 'none';
         document.getElementById('issues').innerHTML = issues.sort(compareScores.bind(this, settings)).filter((issue) => !issue.pull_request).map((issue, index) => `
         <tr>
         <td>${index + 1}</td>
