@@ -52,7 +52,7 @@ localStorage.setItem("githubAccessToken", githubAccessToken);
 function fetchGithubIssues(repository) {
     return fetchGithubIssuesPage(repository, 0).then(function(firstPage) {
         if (firstPage.status !== 200) {
-            showError(`<strong>Could not access repository.</strong> You may have misspelled the repository name, it may be private, or you mave have exceeded your rate limit. The HTTP status text is "${firstPage.statusText}."`);
+            showError(`<strong>Could not access repository.</strong> This may be because it is a <a href="https://github.com/mapbox/top-issues#private-repos">private repository</a>, you have misspelled the repository name, or you have <a href="https://github.com/mapbox/top-issues#rate-limiting">exceeded your rate limit</a>.`);
         }
         var pageCount = getPageCountFromLink(firstPage.headers.get('Link'));
         var pagePromises = [firstPage.json()];
